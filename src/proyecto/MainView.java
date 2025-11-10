@@ -14,18 +14,12 @@ import java.awt.Dimension;
 import java.awt.GraphicsConfiguration;
 import javax.swing.JPanel;
 
-// --- IMPORTS DE JAVA 3D Y DEL CARGADOR OBJ ---
 import javax.media.j3d.*;
 import javax.vecmath.*;
 import com.sun.j3d.utils.universe.SimpleUniverse;
-import com.sun.j3d.utils.geometry.ColorCube; // Usaremos ColorCube para el fallback
+import com.sun.j3d.utils.geometry.Box; 
 import com.sun.j3d.utils.behaviors.mouse.MouseRotate;
-import com.sun.j3d.loaders.objectfile.ObjectFile; // Cargador de OBJ
-import com.sun.j3d.loaders.Scene; // Para recibir el modelo cargado
-import static java.awt.Frame.MAXIMIZED_BOTH;
-import java.io.FileNotFoundException;
-import java.net.URL; // Para cargar el recurso
-// --- FIN DE IMPORTS ---
+import java.net.URL; 
 
 
 public class MainView extends javax.swing.JFrame {
@@ -53,7 +47,6 @@ public class MainView extends javax.swing.JFrame {
     }
     
     private void crearToolBarYEscena3D() {
-        // --- 1. CREACIÓN DEL TOOLBAR (Sin cambios) ---
         JToolBar toolBar = new JToolBar();
         toolBar.setFloatable(false); 
         
@@ -93,24 +86,19 @@ public class MainView extends javax.swing.JFrame {
         toolBar.add(btnSalir);
         
         
-        // --- 2. CREACIÓN DE LA ESCENA 3D (NUEVO) ---
-        
         GraphicsConfiguration config = SimpleUniverse.getPreferredConfiguration();
         Canvas3D canvas3D = new Canvas3D(config);
         
         JPanel panel3D = new JPanel(new BorderLayout());
-        panel3D.setPreferredSize(new Dimension(300, 300)); // Tamaño del panel 3D
+        panel3D.setPreferredSize(new Dimension(300, 300)); 
         panel3D.add(canvas3D, BorderLayout.CENTER);
 
-        // Creamos la escena (cargando el Torii)
         BranchGroup escena = crearGrafoEscena();
         
         simpleU = new SimpleUniverse(canvas3D);
         simpleU.getViewingPlatform().setNominalViewingTransform();
         simpleU.addBranchGraph(escena);
 
-        
-        // --- 3. CONFIGURACIÓN DEL LAYOUT (MODIFICADO) ---
         
         this.getContentPane().setLayout(new java.awt.BorderLayout());
         this.getContentPane().add(toolBar, java.awt.BorderLayout.NORTH);
@@ -119,57 +107,139 @@ public class MainView extends javax.swing.JFrame {
     }
     
     
-    /**
-     * Carga el modelo tori.obj.
-     * Si falla, carga un ColorCube como fallback.
-     * No incluye iluminación.
-     */
     public BranchGroup crearGrafoEscena() {
         BranchGroup root = new BranchGroup();
         
-        // Grupo de transformación para escalar, mover y rotar el modelo
-        TransformGroup tg = new TransformGroup();
-        tg.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-        tg.setCapability(TransformGroup.ALLOW_TRANSFORM_READ); 
+        TransformGroup tgPosicion = new TransformGroup();
+
+        TransformGroup tgRotacion = new TransformGroup();
+        tgRotacion.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+        tgRotacion.setCapability(TransformGroup.ALLOW_TRANSFORM_READ); 
+
+        TransformGroup tgModelo = new TransformGroup();
         
-        // --- Carga del modelo 3D del Torii ---
-        Scene s = null;
-        try {
-            // Buscamos "tori.obj"
-            URL toriiUrl = getClass().getResource("/assets/tori.obj"); 
-            
-            if (toriiUrl == null) {
-                System.err.println("Error: No se encontró el archivo en la ruta: /assets/tori.obj");
-                throw new FileNotFoundException("Modelo Tori no encontrado en /assets/tori.obj");
-            }
-
-            ObjectFile objLoader = new ObjectFile(); 
-            // Usamos solo RESIZE, ya que no hay luces
-            objLoader.setFlags(ObjectFile.RESIZE);
-
-            s = objLoader.load(toriiUrl);
-            
-            tg.addChild(s.getBranchGroup());
-
-            // Ajusta la escala
-            Transform3D initialTransform = new Transform3D();
-            initialTransform.setScale(0.8); 
-            tg.setTransform(initialTransform);
-
-        } catch (Exception e) {
-            System.err.println("Error al cargar el modelo 3D: " + e.getMessage());
-            System.err.println("Cargando ColorCube de fallback...");
-            
-            // Fallback: Un Cubo de colores
-            tg.addChild(new ColorCube(0.4));
-        }
         
-        root.addChild(tg); 
+        Appearance appRojo = new Appearance();
+        Material matRojo = new Material(
+                new Color3f(0.8f, 0.1f, 0.1f), new Color3f(0.1f, 0.1f, 0.1f),
+                new Color3f(0.8f, 0.1f, 0.1f), new Color3f(1.0f, 1.0f, 1.0f), 64.0f);
+        appRojo.setMaterial(matRojo);
 
-        // Comportamiento de rotación
-        MouseRotate mr = new MouseRotate(tg); 
+        Appearance appNegro = new Appearance();
+        Material matNegro = new Material(
+                new Color3f(0.05f, 0.05f, 0.05f), new Color3f(0.05f, 0.05f, 0.05f),
+                new Color3f(0.1f, 0.1f, 0.1f), new Color3f(0.8f, 0.8f, 0.8f), 32.0f);
+        appNegro.setMaterial(matNegro);
+
+
+        float pilarAlto = 0.5f;
+        float pilarAncho = 0.1f;
+        float pilarDistancia = 0.5f;
+        float pilarSlant = 0.05f;
+
+        Box pilar1 = new Box(pilarAncho, pilarAlto, pilarAncho, appRojo);
+        Transform3D t3d_pilar1 = new Transform3D();
+        t3d_pilar1.rotZ(pilarSlant);
+        t3d_pilar1.setTranslation(new Vector3d(-pilarDistancia, 0.0, 0.0));
+        TransformGroup tg_pilar1 = new TransformGroup(t3d_pilar1);
+        tg_pilar1.addChild(pilar1);
+        
+        Box pilar2 = new Box(pilarAncho, pilarAlto, pilarAncho, appRojo);
+        Transform3D t3d_pilar2 = new Transform3D();
+        t3d_pilar2.rotZ(-pilarSlant);
+        t3d_pilar2.setTranslation(new Vector3d(pilarDistancia, 0.0, 0.0));
+        TransformGroup tg_pilar2 = new TransformGroup(t3d_pilar2);
+        tg_pilar2.addChild(pilar2);
+        
+        float nukiAncho = 0.7f;
+        float nukiAlto = 0.08f;
+        float nukiPosV = 0.25f;
+        Box vigaNuki = new Box(nukiAncho, nukiAlto, pilarAncho, appRojo);
+        Transform3D t3d_vigaNuki = new Transform3D();
+        t3d_vigaNuki.setTranslation(new Vector3d(0.0, nukiPosV, 0.0));
+        TransformGroup tg_vigaNuki = new TransformGroup(t3d_vigaNuki);
+        tg_vigaNuki.addChild(vigaNuki);
+
+        float shimakiAncho = 0.75f;
+        float shimakiAlto = 0.1f;
+        float shimakiPosV = pilarAlto - 0.05f;
+        Box vigaShimaki = new Box(shimakiAncho, shimakiAlto, pilarAncho, appRojo);
+        Transform3D t3d_vigaShimaki = new Transform3D();
+        t3d_vigaShimaki.setTranslation(new Vector3d(0.0, shimakiPosV, 0.0));
+        TransformGroup tg_vigaShimaki = new TransformGroup(t3d_vigaShimaki);
+        tg_vigaShimaki.addChild(vigaShimaki);
+
+        float kasagiAncho1 = 0.9f;
+        float kasagiAlto1 = 0.05f;
+        float kasagiPosV1 = shimakiPosV + shimakiAlto;
+        Box vigaKasagi1 = new Box(kasagiAncho1, kasagiAlto1, pilarAncho + 0.05f, appNegro);
+        Transform3D t3d_vigaKasagi1 = new Transform3D();
+        t3d_vigaKasagi1.setTranslation(new Vector3d(0.0, kasagiPosV1, 0.0));
+        TransformGroup tg_vigaKasagi1 = new TransformGroup(t3d_vigaKasagi1);
+        tg_vigaKasagi1.addChild(vigaKasagi1);
+
+        float kasagiAncho2 = 0.88f;
+        float kasagiAlto2 = 0.08f;
+        float kasagiPosV2 = kasagiPosV1 + kasagiAlto1;
+        Box vigaKasagi2 = new Box(kasagiAncho2, kasagiAlto2, pilarAncho + 0.02f, appNegro);
+        Transform3D t3d_vigaKasagi2 = new Transform3D();
+        t3d_vigaKasagi2.setTranslation(new Vector3d(0.0, kasagiPosV2, 0.0));
+        TransformGroup tg_vigaKasagi2 = new TransformGroup(t3d_vigaKasagi2);
+        tg_vigaKasagi2.addChild(vigaKasagi2);
+
+        tgModelo.addChild(tg_pilar1);
+        tgModelo.addChild(tg_pilar2);
+        tgModelo.addChild(tg_vigaNuki);
+        tgModelo.addChild(tg_vigaShimaki);
+        tgModelo.addChild(tg_vigaKasagi1);
+        tgModelo.addChild(tg_vigaKasagi2);
+        
+        
+        float y_max = kasagiPosV2 + (kasagiAlto2 / 2.0f);
+        float y_min = -pilarAlto;
+        float centroVertical = (y_max + y_min) / 2.0f; 
+        
+        Transform3D tCentrar = new Transform3D();
+        tCentrar.setTranslation(new Vector3d(0.0, -centroVertical, 0.0));
+        tgModelo.setTransform(tCentrar);
+        
+        
+        Transform3D tScale = new Transform3D();
+        tScale.setScale(0.8);
+        
+        Transform3D tTranslate = new Transform3D();
+        tTranslate.setTranslation(new Vector3d(0.0, -0.1, 0.0)); 
+        
+        Transform3D initialTransform = new Transform3D(tTranslate);
+        initialTransform.mul(tScale); 
+        
+        tgPosicion.setTransform(initialTransform);
+
+        
+        tgPosicion.addChild(tgRotacion);
+        tgRotacion.addChild(tgModelo);
+        root.addChild(tgPosicion);
+
+        MouseRotate mr = new MouseRotate(tgRotacion); 
         mr.setSchedulingBounds(new BoundingSphere(new Point3d(), 1000.0));
         root.addChild(mr); 
+
+        AmbientLight ambient = new AmbientLight(new Color3f(0.5f, 0.5f, 0.5f));
+        ambient.setInfluencingBounds(new BoundingSphere());
+        root.addChild(ambient);
+        
+        DirectionalLight dirLight = new DirectionalLight(
+                new Color3f(1.0f, 1.0f, 1.0f), 
+                new Vector3f(-1.0f, -1.0f, -1.0f)
+        );
+        dirLight.setInfluencingBounds(new BoundingSphere());
+        root.addChild(dirLight);
+
+        Color3f colorFondo = new Color3f(0.9f, 0.9f, 0.9f); 
+        Background fondo = new Background(colorFondo);
+        BoundingSphere boundsFondo = new BoundingSphere(new Point3d(0.0, 0.0, 0.0), 1000.0);
+        fondo.setApplicationBounds(boundsFondo);
+        root.addChild(fondo);
 
         return root;
     }
@@ -179,7 +249,6 @@ public class MainView extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">                          
     private void initComponents() {
 
-        // Usamos tu clase de fondo original
         escritorioPrincipal = new proyecto.JDesktopPaneConFondo();
         menuBar = new javax.swing.JMenuBar();
         menuArchivo = new javax.swing.JMenu();
@@ -269,7 +338,6 @@ public class MainView extends javax.swing.JFrame {
 
         setJMenuBar(menuBar);
 
-        // El layout principal se establece en crearToolBarYEscena3D()
         
         pack();
     }// </editor-fold>                        
@@ -318,6 +386,7 @@ public class MainView extends javax.swing.JFrame {
     private void itemGestionRepresentantesActionPerformed(java.awt.event.ActionEvent evt) {                                                          
         RepresentantesView vistaRepresentantes = new RepresentantesView();
         escritorioPrincipal.add(vistaRepresentantes);
+
         vistaRepresentantes.setVisible(true);
         try {
             vistaRepresentantes.setMaximum(true); 
@@ -360,4 +429,6 @@ public class MainView extends javax.swing.JFrame {
     private javax.swing.JMenuBar menuBar;
     private javax.swing.JMenu menuGestion;
     private javax.swing.JMenu menuHistorial;
+    // End of variables declaration                   
+
 }
