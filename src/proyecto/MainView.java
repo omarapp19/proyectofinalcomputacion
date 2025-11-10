@@ -18,10 +18,11 @@ import javax.swing.JPanel;
 import javax.media.j3d.*;
 import javax.vecmath.*;
 import com.sun.j3d.utils.universe.SimpleUniverse;
-import com.sun.j3d.utils.geometry.ColorCube;
+// Importamos 'Box' para el fallback
+import com.sun.j3d.utils.geometry.Box; 
 import com.sun.j3d.utils.behaviors.mouse.MouseRotate;
-import com.sun.j3d.loaders.objectfile.ObjectFile; // Cargador de OBJ
-import com.sun.j3d.loaders.Scene; // Para recibir el modelo cargado
+import com.sun.j3d.utils.loaders.objectfile.ObjectFile; // Cargador de OBJ
+import com.sun.j3d.utils.loaders.Scene; // Para recibir el modelo cargado
 import java.io.FileNotFoundException;
 import java.net.URL; // Para cargar el recurso
 // --- FIN DE IMPORTS ---
@@ -51,10 +52,6 @@ public class MainView extends javax.swing.JFrame {
         this.setExtendedState(MAXIMIZED_BOTH); 
     }
     
-    /**
-     * MODIFICADO: Este método ahora también inicializa la escena 3D 
-     * y la coloca en el lado OESTE (WEST) del BorderLayout.
-     */
     private void crearToolBarYEscena3D() {
         // --- 1. CREACIÓN DEL TOOLBAR (Sin cambios) ---
         JToolBar toolBar = new JToolBar();
@@ -123,17 +120,12 @@ public class MainView extends javax.swing.JFrame {
     
     
     /**
-     * MODIFICADO: Ahora carga un modelo 3D de un Torii en lugar del cubo.
-     */
-  /**
-     * MODIFICADO: Ahora carga un modelo 3D de un Torii en lugar del cubo.
-     * VERSIÓN CORREGIDA: Mueve el addChild DENTRO del bloque try
-     * para evitar el error de "variable no inicializada".
+     * MODIFICADO: Añadida iluminación a la escena.
+     * El modelo (y el fallback) ahora reaccionarán a la luz.
      */
     public BranchGroup crearGrafoEscena() {
         BranchGroup root = new BranchGroup();
         
-        // Grupo de transformación para escalar, mover y rotar el modelo
         TransformGroup tg = new TransformGroup();
         tg.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
         tg.setCapability(TransformGroup.ALLOW_TRANSFORM_READ); 
@@ -141,39 +133,70 @@ public class MainView extends javax.swing.JFrame {
         // --- Carga del modelo 3D del Torii ---
         Scene s = null;
         try {
-            // --- CORRECCIÓN DE NOMBRE DE ARCHIVO ---
-            // Buscamos "tori.obj" (con una 'i')
+            // Buscamos "tori.obj"
             URL toriiUrl = getClass().getResource("/assets/tori.obj"); 
             
             if (toriiUrl == null) {
-                // Mensaje de error también corregido
                 System.err.println("Error: No se encontró el archivo en la ruta: /assets/tori.obj");
                 throw new FileNotFoundException("Modelo Tori no encontrado en /assets/tori.obj");
             }
 
             ObjectFile objLoader = new ObjectFile(); 
-                objLoader.setFlags(ObjectFile.RESIZE | ObjectFile.LOAD_LIGHTING);
+            // LOAD_LIGHTING le dice al cargador que prepare el modelo para la iluminación
+            objLoader.setFlags(ObjectFile.RESIZE | ObjectFile.LOAD_LIGHTING);
 
             s = objLoader.load(toriiUrl);
             
-                 tg.addChild(s.getBranchGroup());
+            tg.addChild(s.getBranchGroup());
 
+            // Ajusta la escala
             Transform3D initialTransform = new Transform3D();
             initialTransform.setScale(0.8); 
             tg.setTransform(initialTransform);
 
         } catch (Exception e) {
-            // Si la carga falla (quizás porque el .obj SÍ necesita un .mtl)
-            // el panel 3D quedará vacío, pero la app no se romperá.
             System.err.println("Error al cargar el modelo 3D: " + e.getMessage());
-            System.err.println("El panel 3D quedará vacío.");
+            System.err.println("Cargando Box de fallback...");
+            
+            // Fallback: Un Cubo Rojo que reacciona a la luz
+            Appearance redApp = new Appearance();
+            Material redMaterial = new Material(
+                new Color3f(0.2f, 0.0f, 0.0f), // Color Ambiental
+                new Color3f(0.0f, 0.0f, 0.0f), // Color Emisivo (no brilla)
+                new Color3f(0.8f, 0.1f, 0.1f), // Color Difuso (el color principal)
+                new Color3f(1.0f, 1.0f, 1.0f), // Color Especular (el brillo)
+                64.0f // Brillo (shininess)
+            );
+            redApp.setMaterial(redMaterial);
+            // Usamos new Box() en lugar de ColorCube
+            tg.addChild(new Box(0.4f, 0.4f, 0.4f, redApp));
         }
         
         root.addChild(tg); 
 
-        // Creamos el comportamiento de rotación con el mouse
+        // --- AÑADIR LUCES A LA ESCENA ---
+        
+        // Define un área grande donde las luces tendrán efecto
+        BoundingSphere bounds = new BoundingSphere(new Point3d(0.0, 0.0, 0.0), 100.0);
+
+        // 1. Luz Ambiental (para evitar sombras 100% negras)
+        AmbientLight ambientLight = new AmbientLight(new Color3f(0.3f, 0.3f, 0.3f));
+        ambientLight.setInfluencingBounds(bounds);
+        root.addChild(ambientLight);
+
+        // 2. Luz Direccional (como el sol, para crear reflejos y sombras)
+        DirectionalLight dirLight = new DirectionalLight(
+            new Color3f(1.0f, 1.0f, 1.0f),      // Luz blanca fuerte
+            new Vector3f(-1.0f, -1.0f, -1.0f) // Dirección (desde arriba, izquierda y atrás)
+        );
+        dirLight.setInfluencingBounds(bounds);
+        root.addChild(dirLight);
+
+        // --- FIN DE LUCES ---
+
+        // Comportamiento de rotación
         MouseRotate mr = new MouseRotate(tg); 
-        mr.setSchedulingBounds(new BoundingSphere(new Point3d(), 1000.0));
+        mr.setSchedulingBounds(bounds); // Usar los mismos bounds
         root.addChild(mr); 
 
         return root;
