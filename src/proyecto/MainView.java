@@ -389,7 +389,7 @@ public class MainView extends javax.swing.JFrame {
     private javax.swing.JMenu menuGestion;
     private javax.swing.JMenu menuHistorial;
     // End of variables declaration                   
-}
+
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
