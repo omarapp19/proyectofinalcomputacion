@@ -22,6 +22,7 @@ import com.sun.j3d.utils.geometry.ColorCube; // Usaremos ColorCube para el fallb
 import com.sun.j3d.utils.behaviors.mouse.MouseRotate;
 import com.sun.j3d.loaders.objectfile.ObjectFile; // Cargador de OBJ
 import com.sun.j3d.loaders.Scene; // Para recibir el modelo cargado
+import static java.awt.Frame.MAXIMIZED_BOTH;
 import java.io.FileNotFoundException;
 import java.net.URL; // Para cargar el recurso
 // --- FIN DE IMPORTS ---
@@ -359,28 +360,4 @@ public class MainView extends javax.swing.JFrame {
     private javax.swing.JMenuBar menuBar;
     private javax.swing.JMenu menuGestion;
     private javax.swing.JMenu menuHistorial;
-    // End of variables declaration                   
-
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
-    private void initComponents() {
-
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 300, Short.MAX_VALUE)
-        );
-
-        pack();
-    }// </editor-fold>//GEN-END:initComponents
-
-
-
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    // End of variables declaration//GEN-END:variables
+}
