@@ -1,6 +1,6 @@
 # Blender 4.2.3 LTS
 # www.blender.org
-mtllib torii-gate.mtl
+# mtllib torii-gate.mtl
 o torii
 v 4.589427 7.171855 -0.266387
 v 4.393458 6.811135 -0.266387
