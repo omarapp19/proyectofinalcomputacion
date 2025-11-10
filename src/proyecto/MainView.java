@@ -18,11 +18,10 @@ import javax.swing.JPanel;
 import javax.media.j3d.*;
 import javax.vecmath.*;
 import com.sun.j3d.utils.universe.SimpleUniverse;
-// Importamos 'Box' para el fallback
-import com.sun.j3d.utils.geometry.Box; 
+import com.sun.j3d.utils.geometry.ColorCube; // Usaremos ColorCube para el fallback
 import com.sun.j3d.utils.behaviors.mouse.MouseRotate;
-import com.sun.j3d.utils.loaders.objectfile.ObjectFile; // Cargador de OBJ
-import com.sun.j3d.utils.loaders.Scene; // Para recibir el modelo cargado
+import com.sun.j3d.loaders.objectfile.ObjectFile; // Cargador de OBJ
+import com.sun.j3d.loaders.Scene; // Para recibir el modelo cargado
 import java.io.FileNotFoundException;
 import java.net.URL; // Para cargar el recurso
 // --- FIN DE IMPORTS ---
@@ -120,12 +119,14 @@ public class MainView extends javax.swing.JFrame {
     
     
     /**
-     * MODIFICADO: Añadida iluminación a la escena.
-     * El modelo (y el fallback) ahora reaccionarán a la luz.
+     * Carga el modelo tori.obj.
+     * Si falla, carga un ColorCube como fallback.
+     * No incluye iluminación.
      */
     public BranchGroup crearGrafoEscena() {
         BranchGroup root = new BranchGroup();
         
+        // Grupo de transformación para escalar, mover y rotar el modelo
         TransformGroup tg = new TransformGroup();
         tg.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
         tg.setCapability(TransformGroup.ALLOW_TRANSFORM_READ); 
@@ -142,8 +143,8 @@ public class MainView extends javax.swing.JFrame {
             }
 
             ObjectFile objLoader = new ObjectFile(); 
-            // LOAD_LIGHTING le dice al cargador que prepare el modelo para la iluminación
-            objLoader.setFlags(ObjectFile.RESIZE | ObjectFile.LOAD_LIGHTING);
+            // Usamos solo RESIZE, ya que no hay luces
+            objLoader.setFlags(ObjectFile.RESIZE);
 
             s = objLoader.load(toriiUrl);
             
@@ -156,47 +157,17 @@ public class MainView extends javax.swing.JFrame {
 
         } catch (Exception e) {
             System.err.println("Error al cargar el modelo 3D: " + e.getMessage());
-            System.err.println("Cargando Box de fallback...");
+            System.err.println("Cargando ColorCube de fallback...");
             
-            // Fallback: Un Cubo Rojo que reacciona a la luz
-            Appearance redApp = new Appearance();
-            Material redMaterial = new Material(
-                new Color3f(0.2f, 0.0f, 0.0f), // Color Ambiental
-                new Color3f(0.0f, 0.0f, 0.0f), // Color Emisivo (no brilla)
-                new Color3f(0.8f, 0.1f, 0.1f), // Color Difuso (el color principal)
-                new Color3f(1.0f, 1.0f, 1.0f), // Color Especular (el brillo)
-                64.0f // Brillo (shininess)
-            );
-            redApp.setMaterial(redMaterial);
-            // Usamos new Box() en lugar de ColorCube
-            tg.addChild(new Box(0.4f, 0.4f, 0.4f, redApp));
+            // Fallback: Un Cubo de colores
+            tg.addChild(new ColorCube(0.4));
         }
         
         root.addChild(tg); 
 
-        // --- AÑADIR LUCES A LA ESCENA ---
-        
-        // Define un área grande donde las luces tendrán efecto
-        BoundingSphere bounds = new BoundingSphere(new Point3d(0.0, 0.0, 0.0), 100.0);
-
-        // 1. Luz Ambiental (para evitar sombras 100% negras)
-        AmbientLight ambientLight = new AmbientLight(new Color3f(0.3f, 0.3f, 0.3f));
-        ambientLight.setInfluencingBounds(bounds);
-        root.addChild(ambientLight);
-
-        // 2. Luz Direccional (como el sol, para crear reflejos y sombras)
-        DirectionalLight dirLight = new DirectionalLight(
-            new Color3f(1.0f, 1.0f, 1.0f),      // Luz blanca fuerte
-            new Vector3f(-1.0f, -1.0f, -1.0f) // Dirección (desde arriba, izquierda y atrás)
-        );
-        dirLight.setInfluencingBounds(bounds);
-        root.addChild(dirLight);
-
-        // --- FIN DE LUCES ---
-
         // Comportamiento de rotación
         MouseRotate mr = new MouseRotate(tg); 
-        mr.setSchedulingBounds(bounds); // Usar los mismos bounds
+        mr.setSchedulingBounds(new BoundingSphere(new Point3d(), 1000.0));
         root.addChild(mr); 
 
         return root;
